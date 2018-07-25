@@ -262,5 +262,5 @@ function sendBidWonToGa(bid) {
 
 adaptermanager.registerAnalyticsAdapter({
   adapter: exports,
-  code: 'ga'
+  code: 'gtm'
 });
