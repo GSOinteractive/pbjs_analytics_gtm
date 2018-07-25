@@ -14,12 +14,12 @@ var BID_WON = CONSTANTS.EVENTS.BID_WON;
 
 var _disableInteraction = { nonInteraction: true };
 var _analyticsQueue = [];
-var _gaGlobal = null;
+var _datalayerGlobal = null;
 var _enableCheck = true;
 var _category = 'Prebid.js Bids';
 var _eventCount = 0;
 var _enableDistribution = false;
-var _trackerSend = null;
+var _eventName = null;
 var _sampled = true;
 
 /**
@@ -29,13 +29,13 @@ var _sampled = true;
  * @return {[type]}    [description]
  */
 exports.enableAnalytics = function ({ provider, options }) {
-  _gaGlobal = provider || 'ga';
-  _trackerSend = options && options.trackerName ? options.trackerName + '.send' : 'send';
+  _datalayerGlobal = 'dataLayer';
+  _eventName = options && options.eventName ? options.eventName : 'GAEvent';
   _sampled = typeof options === 'undefined' || typeof options.sampling === 'undefined' ||
              Math.random() < parseFloat(options.sampling);
 
   if (options && typeof options.global !== 'undefined') {
-    _gaGlobal = options.global;
+    _datalayerGlobal = options.global;
   }
   if (options && typeof options.enableDistribution !== 'undefined') {
     _enableDistribution = options.enableDistribution;
@@ -102,14 +102,14 @@ exports.enableAnalytics = function ({ provider, options }) {
 };
 
 exports.getTrackerSend = function getTrackerSend() {
-  return _trackerSend;
+  return _eventName;
 };
 
 /**
  * Check if gaGlobal or window.ga is defined on page. If defined execute all the GA commands
  */
 function checkAnalytics() {
-  if (_enableCheck && typeof window[_gaGlobal] === 'function') {
+  if (_enableCheck && Array.isArray(window[_datalayerGlobal]) {
     for (var i = 0; i < _analyticsQueue.length; i++) {
       _analyticsQueue[i].call();
     }
@@ -194,7 +194,8 @@ function sendBidRequestToGa(bid) {
   if (bid && bid.bidderCode) {
     _analyticsQueue.push(function () {
       _eventCount++;
-      window[_gaGlobal](_trackerSend, 'event', _category, 'Requests', bid.bidderCode, 1, _disableInteraction);
+      window[_datalayerGlobal].push({event: _eventName, eventCategory: _category, eventAction: 'Requests', eventLabel: bid.bidderCode, eventValue: 1, eventNonInteraction: _disableInteraction});
+        //_eventName, 'event', _category, 'Requests', bid.bidderCode, 1, _disableInteraction);
     });
   }
 
@@ -210,7 +211,8 @@ function sendBidResponseToGa(bid) {
       if (typeof bid.timeToRespond !== 'undefined' && _enableDistribution) {
         _eventCount++;
         var dis = getLoadTimeDistribution(bid.timeToRespond);
-        window[_gaGlobal](_trackerSend, 'event', 'Prebid.js Load Time Distribution', dis, bidder, 1, _disableInteraction);
+        //window[_datalayerGlobal](_eventName, 'event', 'Prebid.js Load Time Distribution', dis, bidder, 1, _disableInteraction);
+        window[_datalayerGlobal].push({event: _eventName, eventCategory: 'Prebid.js Load Time Distribution', eventAction: dis, eventLabel: bidder, eventValue: 1, eventNonInteraction: _disableInteraction});
       }
 
       if (bid.cpm > 0) {
@@ -218,11 +220,14 @@ function sendBidResponseToGa(bid) {
         var cpmDis = getCpmDistribution(bid.cpm);
         if (_enableDistribution) {
           _eventCount++;
-          window[_gaGlobal](_trackerSend, 'event', 'Prebid.js CPM Distribution', cpmDis, bidder, 1, _disableInteraction);
+          //window[_datalayerGlobal](_eventName, 'event', 'Prebid.js CPM Distribution', cpmDis, bidder, 1, _disableInteraction);
+          window[_datalayerGlobal].push({event: _eventName, eventCategory: 'Prebid.js CPM Distribution', eventAction: cpmDis, eventLabel: bidder, eventValue: 1, eventNonInteraction: _disableInteraction});
         }
 
-        window[_gaGlobal](_trackerSend, 'event', _category, 'Bids', bidder, cpmCents, _disableInteraction);
-        window[_gaGlobal](_trackerSend, 'event', _category, 'Bid Load Time', bidder, bid.timeToRespond, _disableInteraction);
+        //window[_datalayerGlobal](_eventName, 'event', _category, 'Bids', bidder, cpmCents, _disableInteraction);
+        window[_datalayerGlobal].push({event: _eventName, eventCategory: _category, eventAction: 'Bids', eventLabel: bidder, eventValue: cpmCents, eventNonInteraction: _disableInteraction});
+        //window[_datalayerGlobal](_eventName, 'event', _category, 'Bid Load Time', bidder, bid.timeToRespond, _disableInteraction);
+        window[_datalayerGlobal].push({event: _eventName, eventCategory: _category, eventAction: 'Bid Load Time', eventLabel: bidder, eventValue: bid.timeToRespond, eventNonInteraction: _disableInteraction});
       }
     });
   }
@@ -236,7 +241,8 @@ function sendBidTimeouts(timedOutBidders) {
     utils._each(timedOutBidders, function (bidderCode) {
       _eventCount++;
       var bidderName = bidderCode.bidder;
-      window[_gaGlobal](_trackerSend, 'event', _category, 'Timeouts', bidderName, _disableInteraction);
+      //window[_datalayerGlobal](_eventName, 'event', _category, 'Timeouts', bidderName, _disableInteraction);
+      window[_datalayerGlobal].push({event: _eventName, eventCategory: _category, eventAction: 'Timeouts', eventLabel: bidderName, eventNonInteraction: _disableInteraction});
     });
   });
 
@@ -247,7 +253,8 @@ function sendBidWonToGa(bid) {
   var cpmCents = convertToCents(bid.cpm);
   _analyticsQueue.push(function () {
     _eventCount++;
-    window[_gaGlobal](_trackerSend, 'event', _category, 'Wins', bid.bidderCode, cpmCents, _disableInteraction);
+    //window[_datalayerGlobal](_eventName, 'event', _category, 'Wins', bid.bidderCode, cpmCents, _disableInteraction);
+    window[_datalayerGlobal].push({event: _eventName, eventCategory: _category, eventAction: 'Wins', eventLabel: bid.bidderCode, eventValue: cpmCents, eventNonInteraction: _disableInteraction});
   });
 
   checkAnalytics();
